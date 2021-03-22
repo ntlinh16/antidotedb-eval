@@ -94,6 +94,7 @@ The system setting are:
 <p align="center">
     <br>
     <img src="https://raw.githubusercontent.com/ntlinh16/antidotedb-eval/master/results/1DC_population_pos_1-9nodes_parasilo_p-100.png"
+    width="650"/>
     <br>
 <p>
 
