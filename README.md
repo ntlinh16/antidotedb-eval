@@ -81,7 +81,23 @@ cd cloudal/examples/experiment/antidotedb_g5k/
 python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g5k.yaml -k -j < site1:oar_job_id1,site2:oar_job_id2,...> --no-deploy-os --kube-master <the host name of the kubernetes master> &> result/test2.log
 ```
 
-### 4. Experiments Results 
+### 4. Some Experiments Results 
+
+#### 4.1. Increasing number of Antidotedb nodes in 1 DC
+The system setting are:
+- n_DC = 1
+- n_antidotedc = 1, 3, 5, 7, 9
+- n_FMKe_app = n_antidotedc (if we have 5 antidotedc nodes, we deploy 5 FMKe app nodes)
+- FMKe populator: number of process = 100 (as default), dataset: small (1900 entities)
+- scenario: we measure the ops/s when populating the small dataset to Antidote cluster
+
+<p align="center">
+    <br>
+    <img src="https://raw.githubusercontent.com/ntlinh16/antidotedb-eval/master/results/1DC_population_pos_1-9nodes_parasilo_p-100.png"
+    <br>
+<p>
+
+#### 4.2. Increasing number of Antidotedb DCs
 
 A figure of the results of this experiment can be found in the directory [results](https://github.com/ntlinh16/antidotedb-eval/blob/master/results/summary.png)
 
