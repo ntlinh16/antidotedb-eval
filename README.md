@@ -5,7 +5,7 @@ This experiment performs the [FMKe benchmark](https://github.com/ntlinh16/FMKe) 
 
 The flow of this experiment follows [an experiment workflow with cloudal](https://github.com/ntlinh16/cloudal/blob/master/docs/technical_detail.md#an-experiment-workflow-with-cloudal).
 
-The `create_combs_queue()` function creates a list of combinations from the given parameters in the _exp_setting_antidotedb_fmke_g5k_ file which are (1) the number of concurrent clients connects to the database and (2) the number of iterations.
+The `create_combs_queue()` function creates a list of combinations from the given parameters in the _exp_setting_antidotedb_fmke_g5k_ file which are (1) the number of concurrent clients connects to the database, (2) the number of iterations and (3) the topology (number of antidotedb nodes, number of FMKe_app, number of FMKe_client)
 
 The `setup_env()` function (1) makes a reservation for the required infrastructure; and then (2) deploys a Kubernetes cluster to managed all AntidoteDB and FMKe services which are deployed by using Docker containers.
 
@@ -28,8 +28,7 @@ This system config file provides three following information:
 
 * Infrastructure requirements: includes the number of clusters, name of cluster and the number of nodes for each cluster you want to provision on Grid5k system; which OS you want to deploy on reserved nodes; when and how long you want to provision nodes; etc.
 
-* Parameters: is a list of experiment parameters that represent different aspects of the system that you want to examine. Each parameter contains a list of possible values of that aspect. For example, I want to examine the effect of the number of concurrent clients that connect to an AntidoteDB database, so I define a parameter such as `concurrent_clients: [16, 32]`; and each experiment
-will be repeated 5 times (`iteration: [1..5]`) for a statistically significant results.
+* Parameters: is a list of experiment parameters that represent different aspects of the system that you want to examine. Each parameter contains a list of possible values of that aspect. For example, I want to examine the effect of the number of concurrent clients that connect to an AntidoteDB database, so I define a parameter such as `concurrent_clients: [16, 32]`; and each experiment will be repeated 5 times (`iteration: [1..5]`) for a statistically significant results.
 
 * Experiment environment information: the path to experiment configuration files; the topology of an AntidoteDB cluster; etc.
 
