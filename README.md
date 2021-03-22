@@ -3,11 +3,11 @@ This experiment performs the [FMKe benchmark](https://github.com/ntlinh16/FMKe) 
 
 ## Introduction
 
-The flow of the experiment follows [An experiment workflow with cloudal](https://github.com/ntlinh16/cloudal/blob/master/docs/technical_detail.md#an-experiment-workflow-with-cloudal).
+The flow of this experiment follows [an experiment workflow with cloudal](https://github.com/ntlinh16/cloudal/blob/master/docs/technical_detail.md#an-experiment-workflow-with-cloudal).
 
 The `create_combs_queue()` function creates a list of combinations from the given parameters in the _exp_setting_antidotedb_fmke_g5k_ file which are (1) the number of concurrent clients connects to the database and (2) the number of iterations.
 
-The `setup_env()` function (1) makes a reservation for the required infrastructure; and then (2) deploys a Kubernetes cluster to managed all AntidoteDB and FMKe services which are deployed by using containers.
+The `setup_env()` function (1) makes a reservation for the required infrastructure; and then (2) deploys a Kubernetes cluster to managed all AntidoteDB and FMKe services which are deployed by using Docker containers.
 
 The `run_exp_workflow()` function performs 6 steps of a run of this experiment scenario which described detail in the following figure. With each successful run, a new directory will be created to store the results.
 
@@ -82,12 +82,12 @@ cd cloudal/examples/experiment/antidotedb_g5k/
 python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g5k.yaml -k -j < site1:oar_job_id1,site2:oar_job_id2,...> --no-deploy-os --kube-master <the host name of the kubernetes master> &> result/test2.log
 ```
 
-### 4. Results of the experiments
+### 4. Experiments Results 
 
 A figure of the results of this experiment can be found in the directory [results](https://github.com/ntlinh16/antidotedb-eval/blob/master/results/summary.png)
 
 
-## Docker images used in the experiments
+## Docker images used in these experiments
 
 I use Docker images to pre-build the environment for FMKe services. All images are on Docker repository.
 

@@ -41,10 +41,10 @@ parameters:
     # the number of concurrent clients
     concurrent_clients: [16, 32]
     # the number of repetitions for each experiment
-    iteration: [1..5]
-    n_fmke_client: [1,2,5]
+    iteration: [1..10]
+    n_fmke_client: [1..3]
     n_fmke_app: [1..5]
-    n_antidote: [1,3,5,7,9]
+    n_antidote: [3,5,7]
 
 #############################################
 #                                           #
@@ -53,12 +53,12 @@ parameters:
 #############################################
 exp_env:
     # the path to th results directory
-    results_dir: cloudal/examples/experiment/antidotedb_g5k/result
+    results_dir: antidotedb-eval/result
     # the path to the kubernetes yaml template files to deploy 
     # Antidote cluster,  Antidote monitoring services (prometheus and grafana) and FMKe benchmark
-    antidote_yaml_path: cloudal/examples/experiment/antidotedb_g5k/exp_config_files/antidotedb_yaml
-    fmke_yaml_path: cloudal/examples/experiment/antidotedb_g5k/exp_config_files/fmke_yaml
-    monitoring_yaml_path: cloudal/examples/experiment/antidotedb_g5k/exp_config_files/monitoring_yaml
+    antidote_yaml_path: antidotedb-eval/exp_config_files/antidotedb_yaml
+    monitoring_yaml_path: antidotedb-eval/exp_config_files/monitoring_yaml
+    fmke_yaml_path: antidotedb-eval/exp_config_files/fmke_yaml
 
 
 
