@@ -1,5 +1,5 @@
 # Benchmarking the AntidoteDB cluster using FMKe on Grid5000 system
-This experiment performs the [FMKe benchmark](https://github.com/ntlinh16/FMKe) to test the performance of an [AntidoteDB](https://www.antidotedb.eu/) cluster which is deployed on Grid5000 system by using Kubernetes.
+This experiment performs the [FMKe benchmark](https://github.com/ntlinh16/FMKe) to test the performance of an [AntidoteDB](https://www.antidotedb.eu/) cluster which is deployed on Grid5000 system by using an experiment management tool, [cloudal](https://github.com/ntlinh16/cloudal/).
 
 ## Introduction
 
@@ -62,7 +62,7 @@ Arguments:
 * `--monitoring`: the script will deploy [Grafana](https://grafana.com/) and [Prometheus](https://prometheus.io/) as an AntidoteDB monitoring system. If you use this option, please make sure that you provide the corresponding Kubernetes deployment files. You can connect to the url provided in the log to access the monitoring UI (i.e., `http://<kube_master_ip>:3000`). The default account credential is `admin/admin`. When login successfully, you can search for `Antidote` to access the pre-defined AntidoteDB dashboard.
 <p align="center">
     <br>
-    <img src="https://raw.githubusercontent.com/ntlinh16/antidotedb-eval/master/results/grafana_monitoring.png" 
+    <img src="https://raw.githubusercontent.com/ntlinh16/antidotedb-eval/master/images/grafana_monitoring.png" 
     width="650"/>
     <br>
 <p>
