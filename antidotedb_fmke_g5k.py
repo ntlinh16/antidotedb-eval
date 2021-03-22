@@ -2,6 +2,7 @@ import os
 import shutil
 import traceback
 import json
+import re
 
 from cloudal.utils import get_logger, execute_cmd, parse_config_file, getput_file, ExecuteCommandException
 from cloudal.action import performing_actions_g5k
@@ -74,9 +75,15 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         logger.debug('Create fmke_client config files to stress database for each Antidote DC')
         file_path = os.path.join(fmke_client_k8s_dir, 'fmke_client.config.template')
 
+        logger.debug('Create the new workload ratio')
+        workload = ",\n".join(["  {%s, %s}" % (key, val)
+                              for key, val in self.configs['exp_env']['operations'].items()])
+        operations = "{operations,[\n%s\n]}." % workload
+
         fmke_list = configurator.get_k8s_resources(resource='pod',
                                                    label_selectors='app=fmke',
                                                    kube_namespace=kube_namespace)
+        logger.debug('Replace corresponding parameters')
         for cluster in self.configs['exp_env']['clusters']:
             fmke_IPs = list()
             for fmke in fmke_list.items:
@@ -85,14 +92,17 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
             fmke_ports = [9090 for i in range(0, len(fmke_IPs))]
             # Modify fmke_client config files with new values
             with open(file_path) as f:
-                doc = f.read().replace('["127.0.0.1"]', '%s' % fmke_IPs)
+                doc = f.read()
+                doc = doc.replace('["127.0.0.1"]', '%s' % fmke_IPs)
                 doc = doc.replace("[9090]", '%s' % fmke_ports)
-                doc = doc.replace("{concurrent, 16}.", '{concurrent, %s}.' %
+                doc = doc.replace("{concurrent, 16}.", "{concurrent, %s}." %
                                   comb['concurrent_clients'])
                 doc = doc.replace("'", '"')
+                doc = re.sub(r"{operations.*", operations, doc, flags=re.S)
             file_path2 = os.path.join(fmke_client_k8s_dir, 'fmke_client_%s.config' % cluster)
             with open(file_path2, 'w') as f:
                 f.write(doc)
+
             logger.debug(
                 'Upload fmke_client config files to kube_master to be used by kubectl to run fmke_client pods')
             getput_file(hosts=exp_nodes, file_paths=[file_path2],
@@ -200,7 +210,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
 
         logger.info('Finish deploying FMKe benchmark')
 
-    def deploy_fmke_pop(self, kube_namespace):
+    def deploy_fmke_pop(self, kube_namespace, comb):
         logger.info('---------------------------')
         logger.info('4. Starting populating data')
         fmke_k8s_dir = self.configs['exp_env']['fmke_yaml_path']
@@ -218,8 +228,8 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         with open(os.path.join(fmke_k8s_dir, 'populate_data.yaml.template')) as f:
             doc = yaml.safe_load(f)
         doc['metadata']['name'] = 'populate-data-without-prescriptions'
-        doc['spec']['template']['spec']['containers'][0]['args'] = [
-            '-f --noprescriptions'] + fmke_IPs
+        doc['spec']['template']['spec']['containers'][0]['args'] = ['-f -d %s --noprescriptions -p %s' %
+                                                                    (comb['dataset'], comb['n_fmke_pop_process'])] + fmke_IPs
         with open(os.path.join(fmke_k8s_dir, 'populate_data.yaml'), 'w') as f:
             yaml.safe_dump(doc, f)
 
@@ -505,7 +515,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
             if self.args.monitoring:
                 self.deploy_antidote_monitoring(kube_master, kube_namespace)
             self.deploy_fmke_app(kube_namespace, comb)
-            pop_result = self.deploy_fmke_pop(kube_namespace)
+            pop_result = self.deploy_fmke_pop(kube_namespace, comb)
             self.deploy_fmke_client(kube_namespace, comb)
             self.save_results(comb, pop_result)
             comb_ok = True
@@ -663,6 +673,12 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
             self.configs['exp_env']['n_fmke_client_per_dc'] +
             self.configs['exp_env']['n_fmke_app_per_dc'] +
             self.configs['exp_env']['n_antidotedb_per_dc'])
+
+        if 'dataset' not in normalized_parameters:
+            self.configs['parameters']['dataset'] = 'standard'
+
+        if 'n_fmke_pop_process' not in normalized_parameters:
+            self.configs['parameters']['n_fmke_pop_process'] = 100
 
         clusters = list()
         for cluster in self.configs['exp_env']['clusters']:

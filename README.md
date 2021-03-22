@@ -88,13 +88,13 @@ The system setting are:
 - n_DC = 1
 - n_antidotedc = 1, 3, 5, 7, 9
 - n_FMKe_app = n_antidotedc (if we have 5 antidotedc nodes, we deploy 5 FMKe app nodes)
-- FMKe populator: number of process = 100 (as default), dataset: small (1900 entities)
+- FMKe populator: number of processes = 100 (as default), dataset: small (1900 entities)
 - scenario: we measure the ops/s when populating the small dataset to Antidote cluster
 
 <p align="center">
     <br>
     <img src="https://raw.githubusercontent.com/ntlinh16/antidotedb-eval/master/results/1DC_population_pos_1-9nodes_parasilo_p-100.png"
-    width="650"/>
+    width="500"/>
     <br>
 <p>
 
