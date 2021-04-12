@@ -30,7 +30,7 @@ This system config file provides three following information:
 
 * Parameters: is a list of experiment parameters that represent different aspects of the system that you want to examine. Each parameter contains a list of possible values of that aspect. For example, I want to examine the effect of the number of concurrent clients that connect to an AntidoteDB database, so I define a parameter such as `concurrent_clients: [16, 32]`; and each experiment will be repeated 5 times (`iteration: [1..5]`) for a statistically significant results.
 
-* Experiment environment information: the path to experiment configuration files; the topology of an AntidoteDB cluster; etc.
+* Experiment environment information: the path to experiment configuration files; the read/write ratio of the workload; the topology of an AntidoteDB cluster; etc.
 
 You need to clarify all these information in `exp_setting_antidotedb_fmke_g5k.yaml` file
 
