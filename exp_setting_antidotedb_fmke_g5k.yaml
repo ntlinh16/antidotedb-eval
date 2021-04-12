@@ -21,16 +21,6 @@ cloud_provider_image: debian10-x64-big
 # follow this link to make your custom image: https://www.grid5000.fr/w/Advanced_Kadeploy#How_can_I_make_my_own_environment.3F
 custom_image: null
 
-# the name of the cluster and the number of nodes on each cluster that you want to make a reservation for this experiment,
-# you need to specify this section. 
-# If you declare your clusters information in the section: Experiment Environment Settings (see below),
-# you can ignore this section
-clusters:
-  - cluster: null
-    n_nodes: 0
-  - cluster: null
-    n_nodes: 0
-
 
 #################################
 #                               #
@@ -41,19 +31,21 @@ parameters:
     # the number of repetitions of each experiment
     iteration: [1..10]
     
-    #### configuration of fmke_populator
-    n_fmke_pop_process:
+    #### configuration of FMKe populator
+    # more detail can be found here: https://github.com/ntlinh16/fmke_populator
+    n_fmke_pop_process: 100
     dataset: standard
+
+    # the number of concurrent processes of one FMKe client 
+    concurrent_clients: 40
     
-    #### configuration of fmke_client
-    # the number of client nodes
-    n_fmke_client: [1..3]
-    # the number of concurrent processes of one client 
-    concurrent_clients: [16, 32]
-    
-    ### configuration of topology
-    n_fmke_app: [1..5]
-    n_antidote: [3,5,7]
+    ### configuration of topology for 1 DC
+    # the number of FMKe client nodes
+    n_fmke_client_per_dc: [0..3]
+    # the number of FMKe application nodes
+    n_fmke_app_per_dc: [1,2]
+    # the number of AntidoteDB nodes
+    n_antidotedb_per_dc: 3
 
 #############################################
 #                                           #
@@ -62,9 +54,9 @@ parameters:
 #############################################
 exp_env:
     # the path to th results directory
-    results_dir: antidotedb-eval/result
+    results_dir: antidotedb-eval/results
     # the path to the kubernetes yaml template files to deploy 
-    # Antidote cluster,  Antidote monitoring services (prometheus and grafana) and FMKe benchmark
+    # Antidote cluster, Antidote monitoring services (prometheus and grafana) and FMKe benchmark
     antidote_yaml_path: antidotedb-eval/exp_config_files/antidotedb_yaml
     monitoring_yaml_path: antidotedb-eval/exp_config_files/monitoring_yaml
     fmke_yaml_path: antidotedb-eval/exp_config_files/fmke_yaml
@@ -72,27 +64,23 @@ exp_env:
     
     # The ratio of read and write of the FMKe workload
     # the following is the default setting, the sum of these ratio must be 100(%)
+    # This information replaces the corresponding values in the fmke_yaml/fmke_client.config.template file,the config file to run FMKe client
     operations:
-      get_pharmacy_prescriptions: 27
-      get_prescription_medication: 27
-      get_staff_prescriptions: 14
-      create_prescription: 8
-      get_processed_prescriptions: 7
-      get_patient: 5
-      update_prescription: 4
-      update_prescription_medication: 4
-      get_prescription: 4
+      get_pharmacy_prescriptions: 0
+      get_prescription_medication: 0
+      get_staff_prescriptions: 0
+      create_prescription: 100
+      get_processed_prescriptions: 0
+      get_patient: 0
+      update_prescription: 0
+      update_prescription_medication: 0
+      get_prescription: 0
 
-
-    ######If you define the following information, the "clusters" filed in the "Infrastructures" will be overwritten ######
+    
+    ### Information of kubernetes master and sites of AntidoteDB
 
     # You should declare the site that kubernetes master node will be deployed in.
     # If it is null, then the k8s master node will be deployed on the first site you specify in the file clusters below
-    kube_master_site: paravance
-    # The clusters contains the sites that all the Antidote data centers will be deployed,
-    # each site has one data center
-    clusters: [paravance]
-    # the number of each type of node per data center:
-    n_antidotedb_per_dc: 3
-    n_fmke_app_per_dc: 1
-    n_fmke_client_per_dc: 1
+    kube_master_site: dahu
+    # The name of the cluster on Grid5000 that you want to deploy AntidoteDB data centers.
+    clusters: [dahu, econome]
