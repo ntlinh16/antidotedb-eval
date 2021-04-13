@@ -2,6 +2,7 @@ import os
 import shutil
 import traceback
 import re
+import requests
 
 from cloudal.utils import get_logger, execute_cmd, parse_config_file, getput_file, ExecuteCommandException
 from cloudal.action import performing_actions_g5k
@@ -35,7 +36,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
                                       help="deploy Grafana and Prometheus for monitoring",
                                       action="store_true")
 
-    def save_results(self, comb, pop_result):
+    def save_results(self, comb, pop_time, pop_error):
         logger.info("----------------------------------")
         logger.info("6. Starting dowloading the results")
 
@@ -49,17 +50,21 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
                                local_result_dir=self.configs['exp_env']['results_dir'])
 
         with open(os.path.join(comb_dir, 'pop_time.txt'), 'w') as f:
-            f.write(pop_result)
+            f.write(pop_time)
+        with open(os.path.join(comb_dir, 'pop_error.txt'), 'w') as f:
+            f.write(str(pop_error))
 
         logger.info("Finish dowloading the results")
 
-    def save_results_poptime(self, comb, pop_result):
+    def save_results_poptime(self, comb, pop_time, pop_error):
         logger.info("----------------------------------")
         logger.info("6. Starting dowloading the results")
 
         comb_dir = create_combination_dir(comb, result_dir=self.configs['exp_env']['results_dir'])
         with open(os.path.join(comb_dir, 'pop_time.txt'), 'w') as f:
-            f.write(pop_result)
+            f.write(pop_time)
+        with open(os.path.join(comb_dir, 'pop_error.txt'), 'w') as f:
+            f.write(str(pop_error))
         logger.info("Finish dowloading the results")
 
     def deploy_fmke_client(self, kube_namespace, comb):
@@ -509,9 +514,29 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         configurator.wait_k8s_resources(resource='pod',
                                         label_selectors="app=grafana",
                                         kube_namespace=kube_namespace)
+
         logger.info("Finish deploying monitoring system\n")
-        logger.info("Connect to Grafana at: http://%s:3000" % kube_master_ip)
-        logger.info("Connect to Prometheus at: http://%s:9090" % kube_master_ip)
+        prometheus_url = "http://%s:9090" % kube_master_ip
+        grafana_url = "http://%s:3000" % kube_master_ip
+        logger.info("Connect to Grafana at: %s" % grafana_url)
+        logger.info("Connect to Prometheus at: %s" % prometheus_url)
+
+        return prometheus_url, grafana_url
+
+    def get_prometheus_metric(self, metric_name, prometheus_url):
+        logger.info('---------------------------')
+        logger.info('Retrieving Prometheus data')
+        query = "%s/api/v1/query?query=%s" % (prometheus_url, metric_name)
+        logger.debug("query = %s" % query)
+        r = requests.get(query)
+        normalize_result = dict()
+        logger.debug("status_code = %s" % r.status_code)
+        if r.status_code == 200:
+            result = r.json()
+            for each in result['data']['result']:
+                key = each['metric']['instance']
+                normalize_result[key] = int(each['value'][1])
+        return normalize_result
 
     def clean_k8s_resources(self, kube_namespace, n_fmke_client_per_dc):
         logger.info('1. Deleting all k8s resource from the previous run in namespace "%s"' %
@@ -539,14 +564,19 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
             self.clean_k8s_resources(kube_namespace, comb['n_fmke_client_per_dc'])
             self.deploy_antidote(kube_namespace, comb)
             if self.args.monitoring:
-                self.deploy_antidote_monitoring(kube_master, kube_namespace)
+                prometheus_url, _ = self.deploy_antidote_monitoring(kube_master, kube_namespace)
             self.deploy_fmke_app(kube_namespace, comb)
             pop_result = self.deploy_fmke_pop(kube_namespace, comb)
+            metric_result = None
+            if self.args.monitoring:
+                metric_result = self.get_prometheus_metric("antidote_error_count", prometheus_url)
+                metric_result = sum(metric_result.values())
+                logger.info("Total ops errors: %s" % metric_result)
             if comb['n_fmke_client_per_dc'] > 0:
                 self.deploy_fmke_client(kube_namespace, comb)
-                self.save_results(comb, pop_result)
+                self.save_results(comb, pop_result, metric_result)
             else:
-                self.save_results_poptime(comb, pop_result)
+                self.save_results_poptime(comb, pop_result, metric_result)
             comb_ok = True
         except (ExecuteCommandException, CancelCombException) as e:
             comb_ok = False
