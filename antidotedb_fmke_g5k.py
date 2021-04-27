@@ -599,9 +599,9 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
             configurator.set_labels_node(nodename=host,
                                          labels='cluster_g5k=%s' % cluster)
 
-        n_fmke_app_per_dc = self.normalized_parameters['n_fmke_app_per_dc']
-        n_fmke_client_per_dc = self.normalized_parameters['n_fmke_client_per_dc']
-        n_antidotedb_per_dc = self.normalized_parameters['n_antidotedb_per_dc']
+        n_fmke_app_per_dc = max(self.normalized_parameters['n_fmke_app_per_dc'])
+        n_fmke_client_per_dc = max(self.normalized_parameters['n_fmke_client_per_dc'])
+        n_antidotedb_per_dc = max(self.normalized_parameters['n_antidotedb_per_dc'])
 
         for cluster, list_of_hosts in clusters.items():
             for n, service_name in [(n_antidotedb_per_dc, 'antidote'),
