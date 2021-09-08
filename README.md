@@ -80,10 +80,16 @@ python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g
 cd cloudal/examples/experiment/antidotedb_g5k/
 python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g5k.yaml -k -j < site1:oar_job_id1,site2:oar_job_id2,...> --no-deploy-os --kube-master <the host name of the kubernetes master> &> result/test2.log
 ```
+### 4. Plot the results
+Here are some tool to help you plot the results of Antidote evaluation experiments
 
-### 4. Some Experiments Results 
+- To plot the results of the experiment that use `fmke_pop` to populate the database to the system, you can use the Python notebook file in [plot_chart](https://github.com/ntlinh16/antidotedb-eval/tree/main/plot_chart) folder.
 
-#### 4.1. Increasing number of Antidotedb nodes in 1 DC
+- To plot a summary Figure (e.g, the factors such as throughput or latencies of the elapsed time) of the experiment that use `fmke_client` to stress the system, you should follow the [fmke_plot](https://github.com/ntlinh16/fmke_plot.git) instruction.
+
+### 5. Some Experiments Results 
+
+#### 5.1. Increasing number of Antidotedb nodes in 1 DC
 The system setting are:
 - n_DC = 1
 - n_antidotedc = 1, 3, 5, 7, 9
@@ -98,7 +104,7 @@ The system setting are:
     <br>
 <p>
 
-#### 4.2. Increasing number of Antidotedb DCs
+#### 5.2. Increasing number of Antidotedb DCs
 
 A figure of the results of this experiment can be found in the directory [results](https://github.com/ntlinh16/antidotedb-eval/blob/master/results/summary.png)
 
