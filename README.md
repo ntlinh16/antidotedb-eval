@@ -1,6 +1,8 @@
 # Benchmarking the AntidoteDB cluster using FMKe on Grid5000 system
 This project aims to evaluate the performance of an [AntidoteDB](https://www.antidotedb.eu/) cluster which is deployed on Grid5000 system by using the [FMKe benchmark](https://github.com/ntlinh16/FMKe). The systems deployment and the experiments running are handled by using an experiment management tool, [cloudal](https://github.com/ntlinh16/cloudal/).
 
+If you do not install and configure all dependencies to use cloudal, please follow the [instruction](https://github.com/ntlinh16/cloudal#installation)
+
 ## Introduction
 
 The flow of this experiment follows [an experiment workflow with cloudal](https://github.com/ntlinh16/cloudal/blob/master/docs/technical_detail.md#an-experiment-workflow-with-cloudal).
@@ -101,7 +103,7 @@ When you use this option, please make sure that you provide the corresponding Ku
 
 ### 5. Some Experiments Results 
 
-#### 5.1. Increasing number of Antidotedb nodes in 1 DC
+#### 5.1. Writing performance when increasing the number of Antidotedb nodes in 1 DC
 
 The system setting are:
 - n_DC = 1
@@ -118,7 +120,7 @@ The system setting are:
 <p>
 
 To plot the results of the experiment that use `fmke_pop` to populate the database to the system, you can use the Python notebook file in [plot_chart](https://github.com/ntlinh16/antidotedb-eval/tree/main/plot_chart) folder.
-#### 5.2. Increasing number of Antidotedb DCs
+#### 5.2. Performance of multiple Antidote DCs
 
 <p align="center">
     <br>
