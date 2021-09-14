@@ -42,9 +42,6 @@ In this experiment, I am using Kubernetes deployment files to deploy and manage 
 
 ### 2. Run the experiment
 
-If you have not set up to use `cloudal` yet, please refer to the instruction [here](https://github.com/ntlinh16/cloudal#installation)
-
-
 If you are running this experiment on your local machine, remember to run the VPN to [connect to Grid5000 system from outside](https://github.com/ntlinh16/cloudal/blob/master/docs/g5k_k8s_setting.md).
 
 Then, run the following command:
