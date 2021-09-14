@@ -22,7 +22,13 @@ After we have a ready system due to the `setup_env()` function, the `run_exp_wor
 
 ## How to run the experiment
 
-### 1. Prepare config files:
+### 1. Clone the repository:
+Clone the project from the git repo:
+```
+git clone https://github.com/ntlinh16/antidotedb-eval.git
+```
+
+### 2. Prepare config files:
 There are two types of configuration files to perform this experiment.
 
 #### Setup environment config file
@@ -32,7 +38,7 @@ This system configuration file provides three following information:
 
 * Parameters: is a list of experiment parameters that represent different aspects of the system that you want to examine. Each parameter contains a list of possible values of that aspect. For example, I want to examine the effect of the number of concurrent clients that connect to an AntidoteDB database, so I define a parameter such as `concurrent_clients: [16, 32]`; and each experiment will be repeated 10 times (`iteration: [1..10]`) for a statistically significant results.
 
-* Experiment environment information: the path to experiment configuration files; the read/write ratio of the FMKe workload; the topology of an AntidoteDB cluster.
+* Experiment environment information: the path to experiment deployment files; the read/write ratio of the FMKe client workload; the topology of an AntidoteDB cluster.
 
 You need to clarify all these information in `exp_setting_antidotedb_fmke_g5k.yaml` file
 
@@ -40,7 +46,7 @@ You need to clarify all these information in `exp_setting_antidotedb_fmke_g5k.ya
 
 In this experiment, I am using Kubernetes deployment files to deploy and manage AntidoteDB cluster, Antidote monitoring services and FMKe benchmark. You need to provide these deployment files. I already provided the template files which work well with this experiment in folder [exp_config_files](https://github.com/ntlinh16/antidotedb-eval/tree/master/exp_config_files). If you do not require any special configurations, you do not have to modify these files.
 
-### 2. Run the experiment
+### 3. Run the experiment
 
 If you are running this experiment on your local machine, remember to run the VPN to [connect to Grid5000 system from outside](https://github.com/ntlinh16/cloudal/blob/master/docs/g5k_k8s_setting.md).
 
@@ -61,28 +67,6 @@ Depending on how many clusters you are requiring, it might take 35 minutes to 1 
 Arguments:
 
 * `-k`: after finishing all the runs of the experiment, all provisioned nodes on Gris5000 will be kept alive so that you can connect to them, or if the experiment is interrupted in the middle, you can use these provisioned nodes to continue the experiments. This mechanism saves time since you don't have to reserve and deploy nodes again. If you do not use `-k`, when the script is finished or interrupted, all your reserved nodes will be deleted.
-
-### 3. Re-run the experiment
-If the script is interrupted by unexpected reasons. You can re-run the experiment and it will continue with the list of combinations left in the queue. You have to provide the same result directory of the previous one. There are two possible cases:
-
-1. If your reserved hosts on Grid5k are dead, you just run the same above command:
-```
-python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g5k.yaml -k &>> results/test.log
-```
-
-2. If your reserved hosts on Grid5k are still alive, you can give the OAR_JOB_IDs to the script:
-```
-python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g5k.yaml -k -j < site1:oar_job_id1,site2:oar_job_id2,...> --no-deploy-os --kube-master <the host name of the kubernetes master> &> results/test2.log
-```
-For example:
-```
-python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g5k.yaml -k --no-deploy-os -j grenoble:2036582,rennes:1817521 --kube-master dahu-9.grenoble.grid5000.fr &>> results/test.log
-```
-
-3. If your script is interrupted after the step `Deploying Kubernetes cluster`, the reason maybe you forget to turn on VPN to connect to Grid5000 from your local machine or just a network problem. You can check it and re-run:
-```
-python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g5k.yaml -k -j < site1:oar_job_id1,site2:oar_job_id2,...> --no-deploy-os --kube-master --setup-k8s-env &>> results/test.log
-```
 ### 4. Run the experiment with the monitoring system:
 If you want to use [Grafana](https://grafana.com/) and [Prometheus](https://prometheus.io/) as an AntidoteDB monitoring system during the experiment running, use can use option `--monitoring`:
 
@@ -91,6 +75,7 @@ python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g
 ```
 
 When you use this option, please make sure that you provide the corresponding Kubernetes deployment files (the [monitoring yaml files](https://github.com/ntlinh16/antidotedb-eval/tree/main/exp_config_files/monitoring_yaml)). You can connect to the url provided in the log file (`results/test.log`) to access the monitoring UI (i.e., `http://<kube_master_ip>:3000`). The default account credential is `admin/admin`. When login successfully, you can search for `Antidote` to access the pre-defined AntidoteDB dashboard.
+
 <p align="center">
     <br>
     <img src="https://raw.githubusercontent.com/ntlinh16/antidotedb-eval/master/images/grafana_monitoring.png" 
@@ -98,7 +83,31 @@ When you use this option, please make sure that you provide the corresponding Ku
     <br>
 <p>
 
-### 5. Some Experiments Results 
+### 5. Re-run the experiment
+If the script is interrupted by unexpected reasons. You can re-run the experiment and it will continue with the list of combinations left in the queue. You have to provide the same result directory of the previous one. There are two possible cases:
+
+1. If your reserved nodes on Grid5k are dead, you just run the same above command:
+```
+python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g5k.yaml -k &>> results/test.log
+```
+This command performs a new reservation and runs all the combinations left. Remember to check the `walltime` when re-running the experiments to avoid violence the charter of Grid5k.
+
+
+2. If your reserved nodes on Grid5k are still alive, you can give the OAR_JOB_IDs to the script:
+```
+python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g5k.yaml -k -j < site1:oar_job_id1,site2:oar_job_id2,...> --no-deploy-os --kube-master <the host name of the kubernetes master> &> results/test2.log
+```
+For example:
+```
+python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g5k.yaml -k --no-deploy-os -j grenoble:2036582,rennes:1817521 --kube-master dahu-9.grenoble.grid5000.fr &>> results/test.log
+```
+
+3. If your script is interrupted after the step `Deploying Kubernetes cluster`, the reason maybe you forget to turn on VPN to connect to Grid5000 from your local machine or just a network problem. You can check it and re-run with option `--setup-k8s-env`:
+```
+python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g5k.yaml -k -j < site1:oar_job_id1,site2:oar_job_id2,...> --no-deploy-os --kube-master --setup-k8s-env &>> results/test.log
+```
+
+### 6. Plot the Experiments Results
 
 #### 5.1. Writing performance when increasing the number of Antidotedb nodes in 1 DC
 
