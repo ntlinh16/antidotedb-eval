@@ -112,7 +112,7 @@ The system setting are:
 
 <p align="center">
     <br>
-    <img src="https://raw.githubusercontent.com/ntlinh16/antidotedb-eval/master/results/1DC_population_pos_1-9nodes_parasilo_p-100.png"
+    <img src="https://raw.githubusercontent.com/ntlinh16/antidotedb-eval/master/images/1DC_population_pos_1-9nodes_parasilo_p-100.png"
     width="500"/>
     <br>
 <p>
@@ -120,9 +120,14 @@ The system setting are:
 To plot the results of the experiment that use `fmke_pop` to populate the database to the system, you can use the Python notebook file in [plot_chart](https://github.com/ntlinh16/antidotedb-eval/tree/main/plot_chart) folder.
 #### 5.2. Increasing number of Antidotedb DCs
 
-A figure of the results of this experiment can be found in the directory [results](https://github.com/ntlinh16/antidotedb-eval/blob/master/results/summary.png)
+<p align="center">
+    <br>
+    <img src="https://raw.githubusercontent.com/ntlinh16/antidotedb-eval/master/images/2DCS_summary.png"
+    width="550"/>
+    <br>
+<p>
 
-To plot a summary Figure (e.g, the factors such as throughput or latencies of the elapsed time) of the experiment that use `fmke_client` to stress the system, you should follow the [fmke_plot](https://github.com/ntlinh16/fmke_plot.git) instruction.
+To plot the above summary Figure (e.g, the factors such as throughput or latencies of the elapsed time) of the experiment that use `fmke_client` to stress the system, you should follow the [fmke_plot](https://github.com/ntlinh16/fmke_plot.git) instruction.
 ## Docker images used in these experiments
 
 I use Docker images to pre-build the environment for FMKe services. All images are on Docker repository.
