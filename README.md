@@ -47,14 +47,14 @@ If you are running this experiment on your local machine, remember to run the VP
 Then, run the following command:
 
 ```
-cd antidotedb_g5k/
-python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g5k.yaml -k &> result/test.log
+cd antidotedb-eval/
+python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g5k.yaml -k &> results/test.log
 ```
 
 You can watch the log by:
 
 ```
-tail -f antidotedb_g5k/result/test.log
+tail -f antidotedb-eval/results/test.log
 ```
 Depending on how many clusters you are requiring, it might take 35 minutes to 1 hour to fully set up the environment before starting the _run_exp_workflow_ function to execute the combinations.
 
@@ -67,30 +67,30 @@ If the script is interrupted by unexpected reasons. You can re-run the experimen
 
 1. If your reserved hosts on Grid5k are dead, you just run the same above command:
 ```
-python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g5k.yaml -k &>> result/test.log
+python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g5k.yaml -k &>> results/test.log
 ```
 
 2. If your reserved hosts on Grid5k are still alive, you can give the OAR_JOB_IDs to the script:
 ```
-python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g5k.yaml -k -j < site1:oar_job_id1,site2:oar_job_id2,...> --no-deploy-os --kube-master <the host name of the kubernetes master> &> result/test2.log
+python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g5k.yaml -k -j < site1:oar_job_id1,site2:oar_job_id2,...> --no-deploy-os --kube-master <the host name of the kubernetes master> &> results/test2.log
 ```
 For example:
 ```
-python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g5k.yaml -k --no-deploy-os -j grenoble:2036582,rennes:1817521 --kube-master dahu-9.grenoble.grid5000.fr &>> result/test.log
+python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g5k.yaml -k --no-deploy-os -j grenoble:2036582,rennes:1817521 --kube-master dahu-9.grenoble.grid5000.fr &>> results/test.log
 ```
 
 3. If your script is interrupted after the step `Deploying Kubernetes cluster`, the reason maybe you forget to turn on VPN to connect to Grid5000 from your local machine or just a network problem. You can check it and re-run:
 ```
-python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g5k.yaml -k -j < site1:oar_job_id1,site2:oar_job_id2,...> --no-deploy-os --kube-master --setup-k8s-env &>> result/test.log
+python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g5k.yaml -k -j < site1:oar_job_id1,site2:oar_job_id2,...> --no-deploy-os --kube-master --setup-k8s-env &>> results/test.log
 ```
 ### 4. Run the experiment with the monitoring system:
 If you want to use [Grafana](https://grafana.com/) and [Prometheus](https://prometheus.io/) as an AntidoteDB monitoring system during the experiment running, use can use option `--monitoring`:
 
 ```
-python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g5k.yaml -k --monitoring &>> result/test.log
+python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g5k.yaml -k --monitoring &>> results/test.log
 ```
 
-When you use this option, please make sure that you provide the corresponding Kubernetes deployment files (the [monitoring yaml files](https://github.com/ntlinh16/antidotedb-eval/tree/main/exp_config_files/monitoring_yaml)). You can connect to the url provided in the log file (`result/test.log`) to access the monitoring UI (i.e., `http://<kube_master_ip>:3000`). The default account credential is `admin/admin`. When login successfully, you can search for `Antidote` to access the pre-defined AntidoteDB dashboard.
+When you use this option, please make sure that you provide the corresponding Kubernetes deployment files (the [monitoring yaml files](https://github.com/ntlinh16/antidotedb-eval/tree/main/exp_config_files/monitoring_yaml)). You can connect to the url provided in the log file (`results/test.log`) to access the monitoring UI (i.e., `http://<kube_master_ip>:3000`). The default account credential is `admin/admin`. When login successfully, you can search for `Antidote` to access the pre-defined AntidoteDB dashboard.
 <p align="center">
     <br>
     <img src="https://raw.githubusercontent.com/ntlinh16/antidotedb-eval/master/images/grafana_monitoring.png" 
