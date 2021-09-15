@@ -91,6 +91,8 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         logger.debug('Create fmke_client config files to stress database for each Antidote DC')
         file_path = os.path.join(fmke_client_k8s_dir, 'fmke_client.config.template')
 
+        test_duration = self.configs['exp_env']['test_duration']
+
         logger.debug('Create the new workload ratio')
         workload = ",\n".join(["  {%s, %s}" % (key, val)
                                for key, val in self.configs['exp_env']['operations'].items()])
@@ -113,6 +115,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
                 doc = doc.replace("[9090]", '%s' % fmke_ports)
                 doc = doc.replace("{concurrent, 16}.", "{concurrent, %s}." %
                                   comb['concurrent_clients'])
+                doc = doc.replace("{duration, 3}.", "{duration, %s}." % test_duration)
                 doc = doc.replace("'", '"')
                 doc = re.sub(r"{operations.*", operations, doc, flags=re.S)
             file_path2 = os.path.join(fmke_client_k8s_dir, 'fmke_client_%s.config' % cluster)

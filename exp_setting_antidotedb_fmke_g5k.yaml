@@ -78,7 +78,9 @@ exp_env:
       update_prescription_medication: 4
       get_prescription: 4
 
-    
+    # the duration (minutes) to run the FMKe client to stress the system
+    test_duration: 3
+
     ### Information of kubernetes master and sites of AntidoteDB
 
     # You should declare the site that kubernetes master node will be deployed in.
