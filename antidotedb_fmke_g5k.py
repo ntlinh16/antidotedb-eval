@@ -92,6 +92,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         file_path = os.path.join(fmke_client_k8s_dir, 'fmke_client.config.template')
 
         test_duration = self.configs['exp_env']['test_duration']
+        logger.info('test_duration = %s' % test_duration)
 
         logger.debug('Create the new workload ratio')
         workload = ",\n".join(["  {%s, %s}" % (key, val)
@@ -150,18 +151,18 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         configurator = k8s_resources_configurator()
         configurator.deploy_k8s_resources(files=fmke_client_files, namespace=kube_namespace)
 
-        t = '0'
-        with open(os.path.join(fmke_client_k8s_dir, 'fmke_client.config.template')) as search:
-            for line in search:
-                line = line.rstrip()  # remove '\n' at end of line
-                if "{duration" in line:
-                    t = line.split(',')[1].split('}')[0].strip()
-        timeout = (int(t) + 5)*60
+        # t = '0'
+        # with open(os.path.join(fmke_client_k8s_dir, 'fmke_client.config.template')) as search:
+        #     for line in search:
+        #         line = line.rstrip()  # remove '\n' at end of line
+        #         if "{duration" in line:
+        #             t = line.split(',')[1].split('}')[0].strip()
+        # timeout = (int(t) + 5)*60
 
-        logger.info("Stressing database in %s minutes ....." % t)
+        logger.info("Stressing database in %s minutes ....." % test_duration)
         configurator.wait_k8s_resources(resource='job',
                                         label_selectors="app=fmke-client",
-                                        timeout=timeout,
+                                        timeout=(test_duration + 5)*60,
                                         kube_namespace=kube_namespace)
         logger.info("Finish stressing Antidote database")
 
@@ -264,7 +265,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         logger.info('Waiting for populating data without prescriptions')
         deploy_ok = configurator.wait_k8s_resources(resource='job',
                                                     label_selectors="app=fmke_pop",
-                                                    timeout=600,
+                                                    timeout=1200,
                                                     kube_namespace=kube_namespace)
         if not deploy_ok:
             raise CancelCombException("Cannot wait until finishing populating data")
@@ -290,36 +291,36 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
                 raise CancelCombException("Populating process ERROR")
             logger.debug("FMKe populator result: \n%s" % pop_result)
 
-        # logger.debug('Modify the populate_data file to populate prescriptions')
-        # with open(os.path.join(fmke_k8s_dir, 'populate_data.yaml.template')) as f:
-        #     doc = yaml.safe_load(f)
-        # doc['metadata']['name'] = 'populate-data-with-onlyprescriptions'
-        # doc['spec']['template']['spec']['containers'][0]['args'] = [
-        #     '-f --onlyprescriptions -p 1'] + fmke_IPs
-        # with open(os.path.join(fmke_k8s_dir, 'populate_data.yaml'), 'w') as f:
-        #     yaml.safe_dump(doc, f)
+        logger.debug('Modify the populate_data file to populate prescriptions')
+        with open(os.path.join(fmke_k8s_dir, 'populate_data.yaml.template')) as f:
+            doc = yaml.safe_load(f)
+        doc['metadata']['name'] = 'populate-data-with-onlyprescriptions'
+        doc['spec']['template']['spec']['containers'][0]['args'] = [
+            '-f --onlyprescriptions -p 1'] + fmke_IPs
+        with open(os.path.join(fmke_k8s_dir, 'populate_data.yaml'), 'w') as f:
+            yaml.safe_dump(doc, f)
 
-        # logger.info("Populating the FMKe benchmark data with prescriptions")
-        # configurator.deploy_k8s_resources(files=[os.path.join(fmke_k8s_dir, 'populate_data.yaml')],
-        #                                   namespace=kube_namespace)
+        logger.info("Populating the FMKe benchmark data with prescriptions")
+        configurator.deploy_k8s_resources(files=[os.path.join(fmke_k8s_dir, 'populate_data.yaml')],
+                                          namespace=kube_namespace)
 
-        # logger.info('Waiting for populating data')
-        # configurator.wait_k8s_resources(resource='job',
-        #                                 label_selectors="app=fmke_pop",
-        #                                 timeout=800,
-        #                                 kube_namespace=kube_namespace)
-        # logger.info('Checking if the populating process finished successfully or not')
-        # fmke_pop_pods = configurator.get_k8s_resources_name(resource='pod',
-        #                                                     label_selectors='job-name=populate-data-with-onlyprescriptions',
-        #                                                     kube_namespace=kube_namespace)
-        # logger.info('FMKe pod: %s' % fmke_pop_pods[0])
-        # if len(fmke_pop_pods) > 0:
-        #     log = configurator.get_k8s_pod_log(
-        #         pod_name=fmke_pop_pods[0], kube_namespace=kube_namespace)
-        #     last_line = log.strip().split('\n')[-1]
-        #     logger.info('Last line of log: %s' % last_line)
-        #     if 'Populated' not in last_line:
-        #         raise CancelCombException("Populating process ERROR")
+        logger.info('Waiting for populating data')
+        configurator.wait_k8s_resources(resource='job',
+                                        label_selectors="app=fmke_pop",
+                                        timeout=1200,
+                                        kube_namespace=kube_namespace)
+        logger.info('Checking if the populating process finished successfully or not')
+        fmke_pop_pods = configurator.get_k8s_resources_name(resource='pod',
+                                                            label_selectors='job-name=populate-data-with-onlyprescriptions',
+                                                            kube_namespace=kube_namespace)
+        logger.info('FMKe pod: %s' % fmke_pop_pods[0])
+        if len(fmke_pop_pods) > 0:
+            log = configurator.get_k8s_pod_log(
+                pod_name=fmke_pop_pods[0], kube_namespace=kube_namespace)
+            last_line = log.strip().split('\n')[-1]
+            logger.info('Last line of log: %s' % last_line)
+            if 'Populated' not in last_line:
+                raise CancelCombException("Populating process ERROR")
         logger.info('Finish populating data')
 
         return pop_result
