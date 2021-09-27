@@ -1,4 +1,6 @@
 import os
+import time
+import math
 import shutil
 import traceback
 import re
@@ -68,6 +70,11 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         logger.info("Finish dowloading the results")
 
     def deploy_fmke_client(self, kube_namespace, comb):
+        if len(self.configs['exp_env']['clusters']) > 1:
+            logger.info('-----------------------------------------------------------------')
+            logger.info('Waiting 30 minutes for the replication and key distribution mechanisms between DCs')
+            time.sleep(1800)
+
         logger.info('-----------------------------------------------------------------')
         logger.info('5. Starting deploying fmke client to stress the Antidote database')
         fmke_client_k8s_dir = self.configs['exp_env']['fmke_yaml_path']
@@ -189,6 +196,10 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         with open(file_path) as f:
             doc = yaml.safe_load(f)
 
+        for i in range(1,11):
+            if 2 ** i > comb['concurrent_clients']:
+                connection_pool_size = int(math.ceil(2 ** i / comb['n_antidotedb_per_dc']))
+                break
         configurator = k8s_resources_configurator()
         service_list = configurator.get_k8s_resources(resource='service',
                                                       label_selectors='app=antidote,type=exposer-service',
@@ -202,7 +213,8 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
             doc['spec']['replicas'] = comb['n_fmke_app_per_dc']
             doc['metadata']['name'] = 'fmke-%s' % cluster
             doc['spec']['template']['spec']['containers'][0]['env'] = [
-                {'name': 'DATABASE_ADDRESSES', 'value': ip}]
+                {'name': 'DATABASE_ADDRESSES', 'value': ip},
+                {'name': 'CONNECTION_POOL_SIZE', 'value': '%s' % connection_pool_size}]
             doc['spec']['template']['spec']['nodeSelector'] = {
                 'service_g5k': 'fmke', 'cluster_g5k': '%s' % cluster}
             file_path = os.path.join(fmke_k8s_dir, 'statefulSet_fmke_%s.yaml' % cluster)
