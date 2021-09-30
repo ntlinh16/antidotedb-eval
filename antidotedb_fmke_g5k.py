@@ -44,7 +44,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
 
         configurator = k8s_resources_configurator()
         results_nodes = configurator.get_k8s_resources_name(resource='node',
-                                                            label_selectors='service_g5k=fmke_client')
+                                                            label_selectors='service_g5k=fmke')
 
         comb_dir = get_results(comb=comb,
                                hosts=results_nodes,
@@ -70,10 +70,10 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         logger.info("Finish dowloading the results")
 
     def deploy_fmke_client(self, kube_namespace, comb):
-        if len(self.configs['exp_env']['clusters']) > 1:
-            logger.info('-----------------------------------------------------------------')
-            logger.info('Waiting 30 minutes for the replication and key distribution mechanisms between DCs')
-            time.sleep(1800)
+        t = 300 * len(self.configs['exp_env']['clusters'])    
+        logger.info('-----------------------------------------------------------------')
+        logger.info('Waiting %s minutes for the replication and key distribution mechanisms between DCs' % t)
+        time.sleep(t)
 
         logger.info('-----------------------------------------------------------------')
         logger.info('5. Starting deploying fmke client to stress the Antidote database')
@@ -91,7 +91,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         logger.debug('Create fmke_client folder on each fmke_client node')
         configurator = k8s_resources_configurator()
         exp_nodes = configurator.get_k8s_resources_name(resource='node',
-                                                        label_selectors='service_g5k=fmke_client')
+                                                        label_selectors='service_g5k=fmke')
         cmd = 'mkdir -p /tmp/fmke_client'
         execute_cmd(cmd, exp_nodes)
 
@@ -147,7 +147,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
             doc['spec']['template']['spec']['containers'][0]['lifecycle']['postStart']['exec']['command'] = [
                 "cp", "/cluster_node/fmke_client_%s.config" % cluster, "/fmke_client/fmke_client.config"]
             doc['spec']['template']['spec']['nodeSelector'] = {
-                'service_g5k': 'fmke_client', 'cluster_g5k': '%s' % cluster}
+                'service_g5k': 'fmke', 'cluster_g5k': '%s' % cluster}
             file_path = os.path.join(fmke_client_k8s_dir, 'create_fmke_client_%s.yaml' % cluster)
             with open(file_path, 'w') as f:
                 yaml.safe_dump(doc, f)
@@ -566,7 +566,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         if n_fmke_client_per_dc > 0:
             logger.debug('Delete all files in /tmp/results folder on fmke_client nodes')
             results_nodes = configurator.get_k8s_resources_name(resource='node',
-                                                                label_selectors='service_g5k=fmke_client',
+                                                                label_selectors='service_g5k=fmke',
                                                                 kube_namespace=kube_namespace)
             cmd = 'rm -rf /tmp/results && mkdir -p /tmp/results'
             execute_cmd(cmd, results_nodes)
@@ -621,8 +621,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
 
         for cluster, list_of_hosts in clusters.items():
             for n, service_name in [(n_antidotedb_per_dc, 'antidote'),
-                                    (n_fmke_app_per_dc, 'fmke'),
-                                    (n_fmke_client_per_dc, 'fmke_client')]:
+                                    (n_fmke_app_per_dc, 'fmke')]:
                 for host in list_of_hosts[0: n]:
                     configurator.set_labels_node(nodename=host,
                                                  labels='service_g5k=%s' % service_name)
@@ -737,8 +736,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
             kube_master_site = self.configs['exp_env']['clusters'][0]
 
         n_nodes_per_cluster = (
-            max(self.normalized_parameters['n_fmke_client_per_dc']) +
-            max(self.normalized_parameters['n_fmke_app_per_dc']) +
+            max(max(self.normalized_parameters['n_fmke_app_per_dc']), max(self.normalized_parameters['n_fmke_client_per_dc'])) +
             max(self.normalized_parameters['n_antidotedb_per_dc'])
         )
 

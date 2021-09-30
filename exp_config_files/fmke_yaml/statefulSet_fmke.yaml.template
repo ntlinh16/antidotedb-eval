@@ -30,6 +30,8 @@ spec:
       - env:
         - name: DATABASE_ADDRESSES
           value: 10.99.22.164
+        - name: CONNECTION_POOL_SIZE
+          value: 30
         image: ntlinh/fmke:latest
         imagePullPolicy: IfNotPresent
         name: fmke
