@@ -12,7 +12,7 @@ spec:
       containers:
       - name: antidote-connect
         image: peterzel/antidote-connect
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         args: []
       restartPolicy: Never
   backoffLimit: 10
