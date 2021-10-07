@@ -70,10 +70,11 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         logger.info("Finish dowloading the results")
 
     def deploy_fmke_client(self, kube_namespace, comb):
-        t = 300 * len(self.configs['exp_env']['clusters'])    
+        # t = 10 * len(self.configs['exp_env']['clusters'])
+        t = 30   
         logger.info('-----------------------------------------------------------------')
         logger.info('Waiting %s minutes for the replication and key distribution mechanisms between DCs' % t)
-        time.sleep(t)
+        time.sleep(t*60)
 
         logger.info('-----------------------------------------------------------------')
         logger.info('5. Starting deploying fmke client to stress the Antidote database')
@@ -167,15 +168,26 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         # timeout = (int(t) + 5)*60
 
         logger.info("Stressing database in %s minutes ....." % test_duration)
-        configurator.wait_k8s_resources(resource='job',
+        deploy_ok = configurator.wait_k8s_resources(resource='job',
                                         label_selectors="app=fmke-client",
                                         timeout=(test_duration + 5)*60,
                                         kube_namespace=kube_namespace)
+        if not deploy_ok:
+            raise CancelCombException("Cannot wait until all fmke client instance are up")
+        logger.info("Checking if FMKe_app deployed correctly")
+        fmke_client_list = configurator.get_k8s_resources_name(resource='pod',
+                                                            label_selectors='app=fmke-client',
+                                                            kube_namespace=kube_namespace)
+        if len(fmke_client_list) != comb['n_fmke_app_per_dc'] * len(self.configs['exp_env']['clusters']):
+            logger.info("n_fmke_client = %s, n_deployed_client_app = %s" %
+                        (comb['n_fmke_app_per_dc']*len(self.configs['exp_env']['clusters']), len(fmke_client_list)))
+            raise CancelCombException("Cannot deploy enough FMKe_client")
+
         logger.info("Finish stressing Antidote database")
 
     def deploy_fmke_app(self, kube_namespace, comb):
         logger.info('------------------------------------')
-        logger.info('3. Starting deploying FMKe benchmark')
+        logger.info('3. Starting deploying FMKe application')
         fmke_k8s_dir = self.configs['exp_env']['fmke_yaml_path']
 
         logger.debug('Delete old deployment files')
@@ -226,14 +238,14 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         configurator = k8s_resources_configurator()
         configurator.deploy_k8s_resources(path=fmke_k8s_dir, namespace=kube_namespace)
 
-        logger.info('Waiting until all fmke app servers are up')
+        logger.info('Waiting until all fmke app instances are up')
         deploy_ok = configurator.wait_k8s_resources(resource='pod',
                                                     label_selectors="app=fmke",
                                                     timeout=600,
                                                     kube_namespace=kube_namespace)
 
         if not deploy_ok:
-            raise CancelCombException("Cannot wait until all fmke app servers are up")
+            raise CancelCombException("Cannot wait until all fmke app instances are up")
         logger.info("Checking if FMKe_app deployed correctly")
         fmke_app_list = configurator.get_k8s_resources_name(resource='pod',
                                                             label_selectors='app=fmke',
@@ -247,7 +259,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
 
     def deploy_fmke_pop(self, kube_namespace, comb):
         logger.info('---------------------------')
-        logger.info('4. Starting populating data')
+        logger.info('4. Starting deploying FMKe populator')
         fmke_k8s_dir = self.configs['exp_env']['fmke_yaml_path']
 
         logger.debug('Modify the populate_data template file')
@@ -268,7 +280,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         with open(os.path.join(fmke_k8s_dir, 'populate_data.yaml'), 'w') as f:
             yaml.safe_dump(doc, f)
 
-        logger.info("Populating the FMKe benchmark data")
+        logger.info("Populating the FMKe benchmark data without prescriptions")
         logger.debug("Init configurator: k8s_resources_configurator")
         configurator = k8s_resources_configurator()
         configurator.deploy_k8s_resources(files=[os.path.join(fmke_k8s_dir, 'populate_data.yaml')],
@@ -316,7 +328,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         configurator.deploy_k8s_resources(files=[os.path.join(fmke_k8s_dir, 'populate_data.yaml')],
                                           namespace=kube_namespace)
 
-        logger.info('Waiting for populating data')
+        logger.info('Waiting for populating data with prescriptions')
         configurator.wait_k8s_resources(resource='job',
                                         label_selectors="app=fmke_pop",
                                         timeout=1200,
