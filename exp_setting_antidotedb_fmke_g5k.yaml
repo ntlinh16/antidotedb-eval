@@ -39,13 +39,13 @@ parameters:
 
     #### configuration of FMKe client
     # the number of concurrent processes of one FMKe client 
-    concurrent_clients: 40
+    concurrent_clients: [16, 32]
     
     ### configuration of topology on 1 site (or Grid5k cluster)
     # the number of FMKe client nodes
-    n_fmke_client_per_dc: [0..3]
+    n_fmke_client_per_dc: [1, 3]
     # the number of FMKe application nodes
-    n_fmke_app_per_dc: [1,2]
+    n_fmke_app_per_dc: [1, 3]
     # the number of AntidoteDB nodes
     n_antidotedb_per_dc: 3
 
@@ -79,12 +79,12 @@ exp_env:
       get_prescription: 4
 
     # the duration (minutes) to run the FMKe client to stress the system
-    test_duration: 3
+    test_duration: 30
 
     ### Information of kubernetes master and sites of AntidoteDB
 
     # You should declare the site that kubernetes master node will be deployed in.
     # If it is null, then the k8s master node will be deployed on the first site you specify in the list of clusters below
-    kube_master_site: dahu
+    kube_master_site: paravance
     # The name of the clusters on Grid5000 that you want to deploy AntidoteDB data centers.
-    clusters: [dahu, econome]
+    clusters: [paravance, econome, nova]
