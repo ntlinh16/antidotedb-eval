@@ -1,6 +1,5 @@
 import os
 import time
-import math
 import shutil
 import traceback
 import re
@@ -71,7 +70,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
 
     def deploy_fmke_client(self, kube_namespace, comb):
         # t = 10 * len(self.configs['exp_env']['clusters'])
-        t = 30   
+        t = 20   
         logger.info('-----------------------------------------------------------------')
         logger.info('Waiting %s minutes for the replication and key distribution mechanisms between DCs' % t)
         time.sleep(t*60)
@@ -159,29 +158,15 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         configurator = k8s_resources_configurator()
         configurator.deploy_k8s_resources(files=fmke_client_files, namespace=kube_namespace)
 
-        # t = '0'
-        # with open(os.path.join(fmke_client_k8s_dir, 'fmke_client.config.template')) as search:
-        #     for line in search:
-        #         line = line.rstrip()  # remove '\n' at end of line
-        #         if "{duration" in line:
-        #             t = line.split(',')[1].split('}')[0].strip()
-        # timeout = (int(t) + 5)*60
-
         logger.info("Stressing database in %s minutes ....." % test_duration)
         deploy_ok = configurator.wait_k8s_resources(resource='job',
                                         label_selectors="app=fmke-client",
                                         timeout=(test_duration + 5)*60,
                                         kube_namespace=kube_namespace)
         if not deploy_ok:
+            logger.error("Cannot wait until all fmke client instance are up")
             raise CancelCombException("Cannot wait until all fmke client instance are up")
-        logger.info("Checking if FMKe_app deployed correctly")
-        fmke_client_list = configurator.get_k8s_resources_name(resource='pod',
-                                                            label_selectors='app=fmke-client',
-                                                            kube_namespace=kube_namespace)
-        if len(fmke_client_list) != comb['n_fmke_app_per_dc'] * len(self.configs['exp_env']['clusters']):
-            logger.info("n_fmke_client = %s, n_deployed_client_app = %s" %
-                        (comb['n_fmke_app_per_dc']*len(self.configs['exp_env']['clusters']), len(fmke_client_list)))
-            raise CancelCombException("Cannot deploy enough FMKe_client")
+
 
         logger.info("Finish stressing Antidote database")
 
@@ -210,8 +195,9 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
 
         for i in range(1,11):
             if 2 ** i > comb['concurrent_clients']:
-                connection_pool_size = int(math.ceil(2 ** i / comb['n_antidotedb_per_dc']))
+                connection_pool_size = 2 ** i
                 break
+        logger.debug("Init configurator: k8s_resources_configurator")
         configurator = k8s_resources_configurator()
         service_list = configurator.get_k8s_resources(resource='service',
                                                       label_selectors='app=antidote,type=exposer-service',
@@ -234,8 +220,6 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
                 yaml.safe_dump(doc, f)
 
         logger.info("Starting FMKe instances on each Antidote DC")
-        logger.debug("Init configurator: k8s_resources_configurator")
-        configurator = k8s_resources_configurator()
         configurator.deploy_k8s_resources(path=fmke_k8s_dir, namespace=kube_namespace)
 
         logger.info('Waiting until all fmke app instances are up')
@@ -434,7 +418,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
             file_path = os.path.join(antidote_k8s_dir, 'exposer-service_%s.yaml' % cluster)
             with open(file_path, 'w') as f:
                 yaml.safe_dump(doc, f)
-                createdc_files.append(file_path)
+            createdc_files.append(file_path)
 
         logger.info("Creating Antidote DCs and exposing services")
         configurator.deploy_k8s_resources(files=createdc_files, namespace=kube_namespace)
@@ -607,6 +591,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
                 self.save_results_poptime(comb, pop_result, metric_result)
             comb_ok = True
         except (ExecuteCommandException, CancelCombException) as e:
+            logger.error('Combination exception: %s' % e)
             comb_ok = False
         finally:
             if comb_ok:
@@ -627,13 +612,11 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
             configurator.set_labels_node(nodename=host,
                                          labels='cluster_g5k=%s' % cluster)
 
-        n_fmke_app_per_dc = max(self.normalized_parameters['n_fmke_app_per_dc'])
-        n_fmke_client_per_dc = max(self.normalized_parameters['n_fmke_client_per_dc'])
+        n_fmke_per_dc = max(max(self.normalized_parameters['n_fmke_app_per_dc']), max(self.normalized_parameters['n_fmke_client_per_dc'])) 
         n_antidotedb_per_dc = max(self.normalized_parameters['n_antidotedb_per_dc'])
 
         for cluster, list_of_hosts in clusters.items():
-            for n, service_name in [(n_antidotedb_per_dc, 'antidote'),
-                                    (n_fmke_app_per_dc, 'fmke')]:
+            for n, service_name in [(n_antidotedb_per_dc, 'antidote'), (n_fmke_per_dc, 'fmke')]:
                 for host in list_of_hosts[0: n]:
                     configurator.set_labels_node(nodename=host,
                                                  labels='service_g5k=%s' % service_name)
