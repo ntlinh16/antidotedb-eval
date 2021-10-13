@@ -38,14 +38,12 @@ parameters:
     # dataset: [small, medium, standard]
 
     #### configuration of FMKe client
-    # the number of concurrent processes of one FMKe client 
-    concurrent_clients: [16, 32]
-    
-    ### configuration of topology on 1 site (or Grid5k cluster)
     # the number of FMKe client nodes
     n_fmke_client_per_dc: [1, 3]
-    # the number of FMKe application nodes
-    n_fmke_app_per_dc: [1, 3]
+    # the number of concurrent processes of one FMKe client 
+    concurrent_clients: [16, 32, 64]
+    
+    ### configuration of topology on 1 site (or Grid5k cluster)
     # the number of AntidoteDB nodes
     n_antidotedb_per_dc: 3
 

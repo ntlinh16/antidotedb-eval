@@ -187,7 +187,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
             for service in service_list.items:
                 if cluster in service.metadata.name:
                     ip = service.spec.cluster_ip
-            doc['spec']['replicas'] = comb['n_fmke_app_per_dc']
+            doc['spec']['replicas'] = comb['n_fmke_client_per_dc']
             doc['metadata']['name'] = 'fmke-%s' % cluster
             doc['spec']['template']['spec']['containers'][0]['env'] = [
                 {'name': 'DATABASE_ADDRESSES', 'value': ip},
@@ -213,9 +213,9 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         fmke_app_list = configurator.get_k8s_resources_name(resource='pod',
                                                             label_selectors='app=fmke',
                                                             kube_namespace=kube_namespace)
-        if len(fmke_app_list) != comb['n_fmke_app_per_dc'] * len(self.configs['exp_env']['clusters']):
+        if len(fmke_app_list) != comb['n_fmke_client_per_dc'] * len(self.configs['exp_env']['clusters']):
             logger.info("n_fmke_app = %s, n_deployed_fmke_app = %s" %
-                        (comb['n_fmke_app_per_dc']*len(self.configs['exp_env']['clusters']), len(fmke_app_list)))
+                        (comb['n_fmke_client_per_dc']*len(self.configs['exp_env']['clusters']), len(fmke_app_list)))
             raise CancelCombException("Cannot deploy enough FMKe_app")
 
         logger.info('Finish deploying FMKe benchmark')
@@ -591,7 +591,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
             configurator.set_labels_node(nodename=host,
                                          labels='cluster_g5k=%s' % cluster)
 
-        n_fmke_per_dc = max(max(self.normalized_parameters['n_fmke_app_per_dc']), max(self.normalized_parameters['n_fmke_client_per_dc'])) 
+        n_fmke_per_dc = max(self.normalized_parameters['n_fmke_client_per_dc'])
         n_antidotedb_per_dc = max(self.normalized_parameters['n_antidotedb_per_dc'])
 
         for cluster, list_of_hosts in clusters.items():
@@ -709,10 +709,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         if kube_master_site is None or kube_master_site not in self.configs['exp_env']['clusters']:
             kube_master_site = self.configs['exp_env']['clusters'][0]
 
-        n_nodes_per_cluster = (
-            max(max(self.normalized_parameters['n_fmke_app_per_dc']), max(self.normalized_parameters['n_fmke_client_per_dc'])) +
-            max(self.normalized_parameters['n_antidotedb_per_dc'])
-        )
+        n_nodes_per_cluster = (max(self.normalized_parameters['n_fmke_client_per_dc']) + max(self.normalized_parameters['n_antidotedb_per_dc']))
 
         # set dataset and n_fmke_pop_process to default in case not provided
         if 'dataset' not in self.normalized_parameters:
@@ -762,7 +759,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
                         n_fmke_client_per_DC: %s ''' % (
             len(self.configs['exp_env']['clusters']),
             max(self.normalized_parameters['n_antidotedb_per_dc']),
-            max(self.normalized_parameters['n_fmke_app_per_dc']),
+            max(self.normalized_parameters['n_fmke_client_per_dc']),
             max(self.normalized_parameters['n_fmke_client_per_dc'])
         )
         )
