@@ -745,6 +745,8 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
     def run(self):
         logger.debug('Parse and convert configs for G5K provisioner')
         self.configs = parse_config_file(self.args.config_file_path)
+        # Add the number of Antidote DC as a parameter
+        self.configs['parameters']['n_dc'] = len(self.configs['exp_env']['clusters'])
 
         logger.debug('Normalize the parameter space')
         self.normalized_parameters = define_parameters(self.configs['parameters'])
