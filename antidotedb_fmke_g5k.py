@@ -57,26 +57,14 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
 
         logger.info("Finish dowloading the results")
 
-    def save_results_poptime(self, comb, pop_time, pop_error):
-        logger.info("----------------------------------")
-        logger.info("6. Starting dowloading the results")
-
-        comb_dir = create_combination_dir(comb, result_dir=self.configs['exp_env']['results_dir'])
-        with open(os.path.join(comb_dir, 'pop_time.txt'), 'w') as f:
-            f.write(pop_time)
-        with open(os.path.join(comb_dir, 'pop_error.txt'), 'w') as f:
-            f.write(str(pop_error))
-        logger.info("Finish dowloading the results")
-
     def deploy_fmke_client(self, kube_namespace, comb):
-        # t = 10 * len(self.configs['exp_env']['clusters'])
         t = 20   
         logger.info('-----------------------------------------------------------------')
         logger.info('Waiting %s minutes for the replication and key distribution mechanisms between DCs' % t)
         time.sleep(t*60)
 
         logger.info('-----------------------------------------------------------------')
-        logger.info('5. Starting deploying fmke client to stress the Antidote database')
+        logger.info('5. Starting deploying FMKe client')
         fmke_client_k8s_dir = self.configs['exp_env']['fmke_yaml_path']
 
         logger.debug('Delete old k8s yaml files if exists')
@@ -88,75 +76,67 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
                     except OSError:
                         logger.debug("Error while deleting file")
 
-        logger.debug('Create fmke_client folder on each fmke_client node')
-        configurator = k8s_resources_configurator()
-        exp_nodes = configurator.get_k8s_resources_name(resource='node',
-                                                        label_selectors='service_g5k=fmke')
-        cmd = 'mkdir -p /tmp/fmke_client'
-        execute_cmd(cmd, exp_nodes)
-
-        logger.debug('Create fmke_client config files to stress database for each Antidote DC')
-        file_path = os.path.join(fmke_client_k8s_dir, 'fmke_client.config.template')
-
         test_duration = self.configs['exp_env']['test_duration']
-        logger.info('test_duration = %s' % test_duration)
 
         logger.debug('Create the new workload ratio')
         workload = ",\n".join(["  {%s, %s}" % (key, val)
                                for key, val in self.configs['exp_env']['operations'].items()])
         operations = "{operations,[\n%s\n]}." % workload
 
+        logger.debug("Init configurator: k8s_resources_configurator")
+        configurator = k8s_resources_configurator()
         fmke_list = configurator.get_k8s_resources(resource='pod',
                                                    label_selectors='app=fmke',
                                                    kube_namespace=kube_namespace)
-        logger.debug('Replace corresponding parameters')
-        for cluster in self.configs['exp_env']['clusters']:
-            fmke_IPs = list()
-            for fmke in fmke_list.items:
-                if cluster in fmke.metadata.name:
-                    fmke_IPs.append(fmke.status.pod_ip)
-            fmke_ports = [9090 for i in range(0, len(fmke_IPs))]
+
+        fmke_client_files = list()
+        config_file_path = os.path.join(fmke_client_k8s_dir, 'fmke_client.config.template')
+        create_file_path = os.path.join(fmke_client_k8s_dir, 'create_fmke_client.yaml.template')
+        for fmke in fmke_list.items:
+            node = fmke.spec.node_name.split('.')[0]
             # Modify fmke_client config files with new values
-            with open(file_path) as f:
+            logger.debug('Create fmke_client config files to stress database for each Antidote DC')
+            with open(config_file_path) as f:
                 doc = f.read()
-                doc = doc.replace('["127.0.0.1"]', '%s' % fmke_IPs)
-                doc = doc.replace("[9090]", '%s' % fmke_ports)
-                doc = doc.replace("{concurrent, 16}.", "{concurrent, %s}." %
-                                  comb['concurrent_clients'])
+                doc = doc.replace('127.0.0.1', '%s' % fmke.status.pod_ip)
+                doc = doc.replace("{concurrent, 16}.", "{concurrent, %s}." % comb['concurrent_clients'])
                 doc = doc.replace("{duration, 3}.", "{duration, %s}." % test_duration)
                 doc = doc.replace("'", '"')
                 doc = re.sub(r"{operations.*", operations, doc, flags=re.S)
-            file_path2 = os.path.join(fmke_client_k8s_dir, 'fmke_client_%s.config' % cluster)
-            with open(file_path2, 'w') as f:
+            file_path = os.path.join(fmke_client_k8s_dir, 'fmke_client_%s.config' % node)
+            with open(file_path, 'w') as f:
                 f.write(doc)
+            logger.debug('Create fmke_client folder on each fmke_client node')
+            cmd = 'mkdir -p /tmp/fmke_client'
+            execute_cmd(cmd, fmke.spec.node_name)
+            logger.debug('Upload fmke_client config files to kube_master to be used by kubectl to run fmke_client pods')
+            getput_file(hosts=fmke.spec.node_name, file_paths=[file_path], dest_location='/tmp/fmke_client/', action='put')
 
-            logger.debug(
-                'Upload fmke_client config files to kube_master to be used by kubectl to run fmke_client pods')
-            getput_file(hosts=exp_nodes, file_paths=[file_path2],
-                        dest_location='/tmp/fmke_client/', action='put')
 
-        logger.debug('Create create_fmke_client.yaml files to run job stress for each Antidote DC')
-        file_path = os.path.join(fmke_client_k8s_dir, 'create_fmke_client.yaml.template')
-        with open(file_path) as f:
-            doc = yaml.safe_load(f)
-        fmke_client_files = list()
-        for cluster in self.configs['exp_env']['clusters']:
-            doc['spec']['parallelism'] = comb['n_fmke_client_per_dc']
-            doc['spec']['completions'] = comb['n_fmke_client_per_dc']
-            doc['metadata']['name'] = 'fmke-client-%s' % cluster
+            logger.debug('Create create_fmke_client.yaml files to deploy one FMKe client')
+            with open(create_file_path) as f:
+                doc = yaml.safe_load(f)            
+            doc['metadata']['name'] = 'fmke-client-%s' % node
             doc['spec']['template']['spec']['containers'][0]['lifecycle']['postStart']['exec']['command'] = [
-                "cp", "/cluster_node/fmke_client_%s.config" % cluster, "/fmke_client/fmke_client.config"]
+                "cp", "/cluster_node/fmke_client_%s.config" % node, "/fmke_client/fmke_client.config"]
             doc['spec']['template']['spec']['nodeSelector'] = {
-                'service_g5k': 'fmke', 'cluster_g5k': '%s' % cluster}
-            file_path = os.path.join(fmke_client_k8s_dir, 'create_fmke_client_%s.yaml' % cluster)
+                'service_g5k': 'fmke', 'kubernetes.io/hostname': '%s' % fmke.spec.node_name}
+            file_path = os.path.join(fmke_client_k8s_dir, 'create_fmke_client_%s.yaml' % node)
             with open(file_path, 'w') as f:
                 yaml.safe_dump(doc, f)
             fmke_client_files.append(file_path)
 
-        logger.info("Running fmke client instances on each DC")
-        logger.debug("Init configurator: k8s_resources_configurator")
-        configurator = k8s_resources_configurator()
+        logger.info("Starting FMKe client instances on each Antidote DC")
         configurator.deploy_k8s_resources(files=fmke_client_files, namespace=kube_namespace)
+        time.sleep(20)
+        logger.info("Checking if deploying enough the number of running FMKe_client or not")
+        fmke_client_list = configurator.get_k8s_resources_name(resource='pod',
+                                                            label_selectors='app=fmke-client',
+                                                            kube_namespace=kube_namespace)
+        if len(fmke_client_list) != comb['n_fmke_client_per_dc'] * len(self.configs['exp_env']['clusters']):
+            logger.info("n_fmke_client = %s, n_deployed_fmke_client = %s" %
+                        (comb['n_fmke_client_per_dc']*len(self.configs['exp_env']['clusters']), len(fmke_client_list)))
+            raise CancelCombException("Cannot deploy enough FMKe_client")
 
         logger.info("Stressing database in %s minutes ....." % test_duration)
         deploy_ok = configurator.wait_k8s_resources(resource='job',
@@ -164,9 +144,8 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
                                         timeout=(test_duration + 5)*60,
                                         kube_namespace=kube_namespace)
         if not deploy_ok:
-            logger.error("Cannot wait until all fmke client instance are up")
-            raise CancelCombException("Cannot wait until all fmke client instance are up")
-
+            logger.error("Cannot wait until all FMKe client instances running completely")
+            raise CancelCombException("Cannot wait until all FMKe client instances running completely")
 
         logger.info("Finish stressing Antidote database")
 
