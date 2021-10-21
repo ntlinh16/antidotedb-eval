@@ -1,9 +1,10 @@
 import os
-import time
 import shutil
 import traceback
 import re
 import requests
+
+from time import sleep
 
 from cloudal.utils import get_logger, execute_cmd, parse_config_file, getput_file, ExecuteCommandException
 from cloudal.action import performing_actions_g5k
@@ -47,7 +48,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
 
         comb_dir = get_results(comb=comb,
                                hosts=results_nodes,
-                               remote_result_files=['/tmp/results/'],
+                               remote_result_files=['/tmp/results/*'],
                                local_result_dir=self.configs['exp_env']['results_dir'])
 
         with open(os.path.join(comb_dir, 'pop_time.txt'), 'w') as f:
@@ -58,11 +59,6 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         logger.info("Finish dowloading the results")
 
     def deploy_fmke_client(self, kube_namespace, comb):
-        t = 20   
-        logger.info('-----------------------------------------------------------------')
-        logger.info('Waiting %s minutes for the replication and key distribution mechanisms between DCs' % t)
-        time.sleep(t*60)
-
         logger.info('-----------------------------------------------------------------')
         logger.info('5. Starting deploying FMKe client')
         fmke_client_k8s_dir = self.configs['exp_env']['fmke_yaml_path']
@@ -128,7 +124,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
 
         logger.info("Starting FMKe client instances on each Antidote DC")
         configurator.deploy_k8s_resources(files=fmke_client_files, namespace=kube_namespace)
-        time.sleep(20)
+        sleep(20)
         logger.info("Checking if deploying enough the number of running FMKe_client or not")
         fmke_client_list = configurator.get_k8s_resources_name(resource='pod',
                                                             label_selectors='app=fmke-client',
@@ -274,6 +270,9 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
                     pop_result = result[4] + "\n" + result[6]
                 if len(result) == 9:
                     pop_result = result[4] + "\n" + result[7]
+                t = 10
+                logger.info('Waiting %s minutes for the replication and key distribution mechanisms between DCs' % t)
+                sleep(t*60)
             else:
                 raise CancelCombException("Populating process ERROR")
             logger.debug("FMKe populator result: \n%s" % pop_result)
@@ -308,10 +307,27 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
             logger.info('Last line of log: %s' % last_line)
             if 'Populated' not in last_line:
                 raise CancelCombException("Populating process ERROR")
+            t = 10
+            logger.info('Waiting %s minutes for the replication and key distribution mechanisms between DCs' % t)
+            sleep(t*60)
         logger.info('Finish populating data')
 
         return pop_result
 
+    def _calculate_ring_size(self, n_nodes):
+        # calculate the ring size base on the number of nodes in a DC
+        # this setting follows the recomandation of Riak KV here:
+        # https://docs.riak.com/riak/kv/latest/setup/planning/cluster-capacity/index.html#ring-size-number-of-partitions 
+        if n_nodes < 7:
+            return 64
+        elif n_nodes < 13:
+            return 128
+        elif n_nodes < 20:
+            return 512
+        elif n_nodes < 40:
+            return 1024
+        return 2048
+        
     def deploy_antidote(self, kube_namespace, comb):
         logger.info('--------------------------------------')
         logger.info('2. Starting deploying Antidote cluster')
@@ -328,14 +344,22 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
 
         statefulSet_files = [os.path.join(antidote_k8s_dir, 'headlessService.yaml')]
         logger.debug('Modify the statefulSet file')
+
         file_path = os.path.join(antidote_k8s_dir, 'statefulSet.yaml.template')
+
+        ring_size  = self._calculate_ring_size(comb['n_antidotedb_per_dc'])
         with open(file_path) as f:
             doc = yaml.safe_load(f)
         for cluster in self.configs['exp_env']['clusters']:
-            doc['spec']['replicas'] = comb['n_antidotedb_per_dc']
+            doc['spec']['replicas'] = comb["n_antidotedb_per_dc"]
             doc['metadata']['name'] = 'antidote-%s' % cluster
             doc['spec']['template']['spec']['nodeSelector'] = {
                 'service_g5k': 'antidote', 'cluster_g5k': '%s' % cluster}
+            envs = doc['spec']['template']['spec']['containers'][0]['env']
+            for env in envs:
+                if env.get('name') == "RING_SIZE":
+                    env['value'] = str(ring_size)
+                    break
             file_path = os.path.join(antidote_k8s_dir, 'statefulSet_%s.yaml' % cluster)
             with open(file_path, 'w') as f:
                 yaml.safe_dump(doc, f)
