@@ -109,24 +109,13 @@ python antidotedb_fmke_g5k.py --system_config_file exp_setting_antidotedb_fmke_g
 
 ### 6. Plot the Experiments Results
 
-#### 5.1. Writing performance when increasing the number of Antidotedb nodes in 1 DC
-
 The system setting are:
-- n_DC = 1
-- n_antidotedc = 1, 3, 5, 7, 9
-- n_FMKe_app = n_antidotedc (if we have 5 antidotedc nodes, we deploy 5 FMKe app nodes)
-- FMKe populator: number of processes = 100 (as default), dataset: small (1900 entities)
-- scenario: we measure the ops/s when populating the small dataset to Antidote cluster
-
-<p align="center">
-    <br>
-    <img src="https://raw.githubusercontent.com/ntlinh16/antidotedb-eval/master/images/1DC_population_pos_1-9nodes_parasilo_p-100.png"
-    width="500"/>
-    <br>
-<p>
-
-To plot the results of the experiment that use `fmke_pop` to populate the database to the system, you can use the Python notebook file in [plot_chart](https://github.com/ntlinh16/antidotedb-eval/tree/main/plot_chart) folder.
-#### 5.2. Performance of multiple Antidote DCs
+- the number of data centers (DCs):  2
+- the number of Antidote per DC: 8 nodes
+- n_FMKe_app = n_FMKe_client = 4
+- the number of concurrent processes of each FMKe_client: 32
+- FMKe populator: number of processes = 100 (as default), dataset: standard (1.015.350 entities)
+- scenario: we measure the ops/s when generate the workload on the Antidote cluster
 
 <p align="center">
     <br>
@@ -135,7 +124,7 @@ To plot the results of the experiment that use `fmke_pop` to populate the databa
     <br>
 <p>
 
-To plot the above summary Figure (e.g, the factors such as throughput or latencies of the elapsed time) of the experiment that use `fmke_client` to stress the system, you should follow the [fmke_plot](https://github.com/ntlinh16/fmke_plot.git) instruction.
+To plot the summary Figure (e.g, the factors such as throughput or latencies of the elapsed time) of the experiment that use `fmke_client` to stress the system, you should follow the [fmke_plot](https://github.com/ntlinh16/fmke_plot.git) instruction.
 ## Docker images used in these experiments
 
 I use Docker images to pre-build the environment for FMKe services. All images are on Docker repository.
@@ -150,3 +139,7 @@ To deploy FMKe benchmark:
 * **ntlinh/fmke**
 * **ntlinh/fmke_pop**
 * **ntlinh/fmke_client**
+
+## Documentation
+
+A detail report of more experiment on AntidoteDB evaluation can be found [here]()
