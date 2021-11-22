@@ -10,7 +10,7 @@ from cloudal.utils import get_logger, execute_cmd, parse_config_file, getput_fil
 from cloudal.action import performing_actions_g5k
 from cloudal.provisioner import g5k_provisioner
 from cloudal.configurator import kubernetes_configurator, k8s_resources_configurator
-from cloudal.experimenter import create_combination_dir, create_paramsweeper, define_parameters, is_job_alive, get_results
+from cloudal.experimenter import create_paramsweeper, define_parameters, is_job_alive, get_results
 
 from execo_g5k import oardel
 from execo_engine import slugify
@@ -27,7 +27,7 @@ class CancelCombException(Exception):
 class FMKe_antidotedb_g5k(performing_actions_g5k):
     def __init__(self, **kwargs):
         super(FMKe_antidotedb_g5k, self).__init__()
-        self.args_parser.add_argument("--kube-master", dest="kube_master",
+        self.args_parser.add_argument("--kube_master", dest="kube_master",
                                       help="name of kube master node",
                                       default=None,
                                       type=str)
@@ -320,8 +320,10 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         # https://docs.riak.com/riak/kv/latest/setup/planning/cluster-capacity/index.html#ring-size-number-of-partitions 
         if n_nodes < 7:
             return 64
-        elif n_nodes < 13:
+        elif n_nodes < 10:
             return 128
+        elif n_nodes < 14:
+            return 256
         elif n_nodes < 20:
             return 512
         elif n_nodes < 40:
@@ -661,7 +663,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         config.load_kube_config(config_file=kube_config_file)
         logger.info('Kubernetes config file is stored at: %s' % kube_config_file)
 
-    def deploy_k8s(self, kube_master, kube_namespace):
+    def deploy_k8s(self, kube_master):
         logger.debug("Init configurator: kubernetes_configurator")
         configurator = kubernetes_configurator(hosts=self.hosts, kube_master=kube_master)
         _, kube_workers = configurator.deploy_kubernetes_cluster()
@@ -692,7 +694,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
                     break
 
         if self.args.kube_master is None:
-            kube_workers = self.deploy_k8s(kube_master, kube_namespace)
+            kube_workers = self.deploy_k8s(kube_master)
             self.setup_k8s_env(kube_master, kube_namespace, kube_workers)
         elif self.args.setup_k8s_env:
             logger.info('Kubernetes master: %s' % kube_master)
@@ -781,14 +783,12 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         logger.info('''Your largest topology:
                         Antidote DCs: %s
                         n_antidotedb_per_DC: %s
-                        n_fmke_app_per_DC: %s
                         n_fmke_client_per_DC: %s ''' % (
-            len(self.configs['exp_env']['clusters']),
-            max(self.normalized_parameters['n_antidotedb_per_dc']),
-            max(self.normalized_parameters['n_fmke_client_per_dc']),
-            max(self.normalized_parameters['n_fmke_client_per_dc'])
-        )
-        )
+                                                        len(self.configs['exp_env']['clusters']),
+                                                        max(self.normalized_parameters['n_antidotedb_per_dc']),
+                                                        max(self.normalized_parameters['n_fmke_client_per_dc'])
+                                                    )
+                    )
 
         logger.info('Creating the combination list')
         sweeper = create_paramsweeper(result_dir=self.configs['exp_env']['results_dir'],
