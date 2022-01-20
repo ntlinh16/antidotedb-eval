@@ -806,12 +806,16 @@ class FMKe_antidotedb_ovh(performing_actions):
 
         # copy all YAML template folders to a new one for this experiment run to avoid conflicting
         results_dir_name = (self.configs["exp_env"]["results_dir"]).split('/')[-1]
-        antidote_yaml_path = self.configs["exp_env"]["antidote_yaml_path"]
-        old_path = os.path.dirname(antidote_yaml_path)
-        new_path = old_path + "_" + results_dir_name
+        results_dir_path = os.path.dirname(self.configs["exp_env"]["results_dir"])
+
+        yaml_dir_path = os.path.dirname(self.configs["exp_env"]["antidote_yaml_path"])
+        yaml_dir_name = yaml_dir_path.split('/')[-1]
+
+        new_yaml_dir_name = yaml_dir_name + "_" + results_dir_name
+        new_path = results_dir_path + "/" + new_yaml_dir_name
         if os.path.exists(new_path):
             shutil.rmtree(new_path)
-        shutil.copytree(old_path, new_path)
+        shutil.copytree(yaml_dir_path, new_path)
 
         self.configs["exp_env"]["antidote_yaml_path"] = new_path + "/antidotedb_yaml"
         self.configs["exp_env"]["monitoring_yaml_path"] = new_path + "/monitoring_yaml"
