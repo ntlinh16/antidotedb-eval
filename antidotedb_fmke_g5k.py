@@ -34,10 +34,9 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
                                       help='deploy Grafana and Prometheus for AntidoteDB monitoring',
                                       action='store_true')
 
-    def save_results(self, comb, pop_time, pop_error, nodes=list()):
+    def save_results(self, comb, pop_time, pop_errors, nodes=list()):
         logger.info('----------------------------------')
         logger.info('6. Starting dowloading the results')
-
         if nodes:
             comb_dir = get_results(comb=comb,
                                    hosts=nodes,
@@ -46,9 +45,9 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         
         with open(os.path.join(comb_dir, 'pop_time.txt'), 'w') as f:
             f.write(pop_time)
-        if pop_error:
+        if pop_errors:
             with open(os.path.join(comb_dir, 'pop_error.txt'), 'w') as f:
-                f.write(str(pop_error))
+                f.write(str(pop_errors))
 
         logger.info('Finish dowloading the results')
 
@@ -71,7 +70,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
                                                   clusters=self.configs['exp_env']['clusters'],
                                                   dataset=comb['dataset'],
                                                   n_fmke_pop_process=comb['n_fmke_pop_process'],
-                                                  stabilizing_time = 2,
+                                                  stabilizing_time = 10,
                                                   kube_namespace=kube_namespace)
         return pop_result
 
@@ -129,8 +128,8 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         if n_fmke_client_per_dc > 0:
             logger.info('Delete old result files in /tmp/results on FMKe client nodes')
             fmke_nodes = configurator.get_k8s_resources_name(resource='node',
-                                                                label_selectors='service_g5k=fmke',
-                                                                kube_namespace=kube_namespace)
+                                                             label_selectors='service_g5k=fmke',
+                                                             kube_namespace=kube_namespace)
             cmd = 'rm -rf /tmp/results && mkdir -p /tmp/results'
             execute_cmd(cmd, fmke_nodes)
 
