@@ -14,5 +14,5 @@ spec:
         args:
       restartPolicy: Never
       nodeSelector:
-        service_g5k: fmke
+        service: fmke
   backoffLimit: 10
