@@ -32,7 +32,7 @@ spec:
           configMap:
            name: prometheus-configmap
       nodeSelector:
-        kubernetes.io/hostname: kube_master_hostname
+        kubernetes.io/hostname: node_hostname
 ---
 kind: Service
 apiVersion: v1
@@ -48,5 +48,5 @@ spec:
     port: 9090
     targetPort: 9090
   externalIPs:
-    - kube_master_ip
+    - node_ip
   type: LoadBalancer
