@@ -46,7 +46,7 @@ spec:
               fieldPath: metadata.name
         - name: NODE_NAME
           value: antidote@$(HOSTNAME).antidote
-        image: antidotedb/antidote:latest
+        image: ntlinh/antidote:erlang24
         imagePullPolicy: IfNotPresent
         name: antidote
         ports:
