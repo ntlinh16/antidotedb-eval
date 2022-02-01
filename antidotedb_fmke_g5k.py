@@ -128,7 +128,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
         if n_fmke_client_per_dc > 0:
             logger.info('Delete old result files in /tmp/results on FMKe client nodes')
             fmke_nodes = configurator.get_k8s_resources_name(resource='node',
-                                                             label_selectors='service_g5k=fmke',
+                                                             label_selectors='service=fmke',
                                                              kube_namespace=kube_namespace)
             cmd = 'rm -rf /tmp/results && mkdir -p /tmp/results'
             execute_cmd(cmd, fmke_nodes)
@@ -154,7 +154,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
                 self.deploy_fmke_client(kube_namespace, comb)
                 configurator = k8s_resources_configurator()
                 fmke_nodes = configurator.get_k8s_resources_name(resource='node',
-                                                                 label_selectors='service_g5k=fmke')
+                                                                 label_selectors='service=fmke')
                 self.save_results(comb, pop_result, pop_errors, fmke_nodes)
             else:
                 self.save_results(comb, pop_result, pop_errors)
@@ -179,7 +179,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
             cluster = host.split('-')[0]
             clusters[cluster] = [host] + clusters.get(cluster, list())
             configurator.set_labels_node(nodename=host,
-                                         labels='cluster_g5k=%s' % cluster)
+                                         labels='cluster=%s' % cluster)
 
         n_fmke_per_dc = max(self.normalized_parameters['n_fmke_client_per_dc'])
         n_antidotedb_per_dc = max(self.normalized_parameters['n_nodes_per_dc'])
@@ -188,7 +188,7 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
             for n, service_name in [(n_antidotedb_per_dc, 'antidote'), (n_fmke_per_dc, 'fmke')]:
                 for host in list_of_hosts[0: n]:
                     configurator.set_labels_node(nodename=host,
-                                                 labels='service_g5k=%s' % service_name)
+                                                 labels='service=%s' % service_name)
                 list_of_hosts = list_of_hosts[n:]
 
     def _setup_g5k_kube_volumes(self, kube_workers, n_pv=3):
