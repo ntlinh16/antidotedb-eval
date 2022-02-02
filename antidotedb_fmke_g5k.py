@@ -70,7 +70,8 @@ class FMKe_antidotedb_g5k(performing_actions_g5k):
                                                   clusters=self.configs['exp_env']['clusters'],
                                                   dataset=comb['dataset'],
                                                   n_fmke_pop_process=comb['n_fmke_pop_process'],
-                                                  stabilizing_time = 10,
+                                                  stabilizing_time=10,
+                                                  timeout=600,
                                                   kube_namespace=kube_namespace)
         return pop_result
 
